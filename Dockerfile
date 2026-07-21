@@ -4,7 +4,6 @@ FROM nvidia/cuda:12.6.2-cudnn-devel-ubuntu24.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG CODEX_VERSION=latest
-ARG TARGETARCH
 
 ENV PATH=/opt/venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
@@ -43,10 +42,7 @@ COPY requirements.txt /tmp/modded-nanogpt-requirements.txt
 
 RUN python3 -m venv /opt/venv \
     && python -m pip install --upgrade pip \
-    && python -m pip install -r /tmp/modded-nanogpt-requirements.txt \
-    && if [ "$TARGETARCH" = "amd64" ]; then \
-        python -m pip install --pre torch --index-url https://download.pytorch.org/whl/nightly/cu126 --upgrade; \
-    fi \
+    && python -m pip install --no-cache-dir -r /tmp/modded-nanogpt-requirements.txt \
     && rm /tmp/modded-nanogpt-requirements.txt
 
 WORKDIR /workspace
