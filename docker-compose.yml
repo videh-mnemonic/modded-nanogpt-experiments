@@ -1,0 +1,27 @@
+services:
+  experiments:
+    build:
+      context: .
+      secrets:
+        - github_ssh_key
+    image: modded-nanogpt-experiments:latest
+    stdin_open: true
+    tty: true
+    working_dir: /workspace/modded-nanogpt-checkpoints
+    volumes:
+      - experiments-workspace:/workspace
+      - codex-state:/root/.codex
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+
+secrets:
+  github_ssh_key:
+    file: ${GITHUB_SSH_KEY}
+
+volumes:
+  experiments-workspace:
+  codex-state:
