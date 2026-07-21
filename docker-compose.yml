@@ -7,7 +7,7 @@ services:
     image: modded-nanogpt-experiments:latest
     stdin_open: true
     tty: true
-    working_dir: /workspace/modded-nanogpt-checkpoints
+    working_dir: /workspace
     volumes:
       - experiments-workspace:/workspace
       - codex-state:/root/.codex

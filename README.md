@@ -1,15 +1,15 @@
 # modded-nanogpt-experiments
 
-A CUDA development image for running Codex against
-[`modded-nanogpt-checkpoints`](https://github.com/videh-mnemonic/modded-nanogpt-checkpoints).
+A CUDA development image for running Codex on modded-nanogpt experiments.
 
 The image contains:
 
-- `modded-nanogpt-checkpoints` at `/workspace/modded-nanogpt-checkpoints`
-- `modded-nanogpt-fork` at `/workspace/modded-nanogpt-fork`
 - the Codex CLI
 - the Python dependencies used by modded-nanogpt
 - the SSH private key supplied at build time, installed as `/root/.ssh/id_ed25519`
+
+Git repositories are not included in the image. Clone the repositories you need
+into the persistent `/workspace` volume after starting the container.
 
 ## Security warning
 
@@ -52,9 +52,16 @@ docker compose run --rm experiments
 ```
 
 The Compose configuration requests GPU access and creates named volumes for the
-workspace and Codex state. Docker initializes a new empty workspace volume from
-the copies baked into the image. Reuse the same volume names to retain commits,
-checkpoints, downloads, and Codex login state across container replacements.
+workspace and Codex state. Reuse the same volume names to retain repositories,
+commits, checkpoints, downloads, and Codex login state across container
+replacements.
+
+Clone the working repository inside the container:
+
+```bash
+git clone git@github.com:videh-mnemonic/modded-nanogpt-checkpoints.git
+cd modded-nanogpt-checkpoints
+```
 
 Inside the container, authenticate Codex if needed and start it:
 
@@ -63,8 +70,8 @@ codex login
 codex
 ```
 
-The default directory is `/workspace/modded-nanogpt-checkpoints`. Git pushes use
-the embedded SSH key:
+The default directory is `/workspace`. Git clones and pushes use the embedded
+SSH key:
 
 ```bash
 ssh -T git@github.com
@@ -91,9 +98,7 @@ Copy this repository's `docker-compose.yml` to the server, set
 `GITHUB_SSH_KEY` to any existing readable file (Compose requires the build
 secret declaration even when the image is already built), and run the service.
 
-## Refresh the repository snapshots
+## Update working repositories
 
-The repository clones are captured when the image is built. Rebuild with
-`--pull --no-cache` to capture the latest default branches. Existing named
-workspace volumes are not overwritten; create a new volume or pull changes from
-inside the working checkout when updating an established container.
+Repositories live in the persistent workspace volume rather than the image.
+Run `git pull` inside each checkout to update it without rebuilding the image.
