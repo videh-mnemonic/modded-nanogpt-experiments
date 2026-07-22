@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -n ${CODEX_HOME:-} ]]; then
+    install -d -m 700 "$CODEX_HOME"
+fi
+
+exec "$@"

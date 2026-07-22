@@ -10,7 +10,7 @@ services:
     working_dir: /workspace
     volumes:
       - experiments-workspace:/workspace
-      - codex-state:/root/.codex
+      - codex-state:/workspace/.codex
     deploy:
       resources:
         reservations:

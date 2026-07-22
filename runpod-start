@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+service nginx start
+
+install -d -m 700 /root/.ssh
+if [[ -n ${PUBLIC_KEY:-} ]]; then
+    touch /root/.ssh/authorized_keys
+    if ! grep -qxF "$PUBLIC_KEY" /root/.ssh/authorized_keys; then
+        printf '%s\n' "$PUBLIC_KEY" >> /root/.ssh/authorized_keys
+    fi
+    chmod 600 /root/.ssh/authorized_keys
+else
+    echo "WARNING: PUBLIC_KEY is empty; direct SSH cannot authenticate." >&2
+fi
+
+ssh-keygen -A
+service ssh start
+
+# SSH login shells do not inherit the container environment. Preserve it while
+# deliberately excluding the injected public key.
+python - <<'PY'
+import os
+import shlex
+
+with open("/etc/rp_environment", "w", encoding="utf-8") as stream:
+    for key, value in sorted(os.environ.items()):
+        if key != "PUBLIC_KEY":
+            stream.write(f"export {key}={shlex.quote(value)}\n")
+PY
+if ! grep -qF 'source /etc/rp_environment' /root/.bashrc; then
+    printf '%s\n' 'source /etc/rp_environment' >> /root/.bashrc
+fi
+
+if [[ -n ${JUPYTER_PASSWORD:-} ]]; then
+    if python -c 'import jupyterlab' 2>/dev/null; then
+        jupyter_port=${JUPYTER_PORT:-8888}
+        nohup python -m jupyter lab \
+            --allow-root \
+            --no-browser \
+            --ip=0.0.0.0 \
+            --port="$jupyter_port" \
+            --ServerApp.allow_origin='*' \
+            --ServerApp.preferred_dir=/workspace \
+            --FileContentsManager.delete_to_trash=False \
+            --IdentityProvider.token="$JUPYTER_PASSWORD" \
+            > /var/log/jupyter.log 2>&1 &
+        jupyter_pid=$!
+        sleep 2
+        if ! kill -0 "$jupyter_pid" 2>/dev/null; then
+            cat /var/log/jupyter.log >&2
+            exit 1
+        fi
+    else
+        echo "WARNING: JUPYTER_PASSWORD is set, but JupyterLab is not installed." >&2
+    fi
+fi
+
+echo "RunPod services started; container is ready."
+exec sleep infinity

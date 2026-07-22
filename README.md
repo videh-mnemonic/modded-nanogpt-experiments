@@ -7,6 +7,8 @@ The image contains:
 - the Codex CLI
 - the Python dependencies used by modded-nanogpt
 - the SSH private key supplied at build time, installed as `/root/.ssh/id_ed25519`
+- a RunPod startup script that starts nginx and public-key SSH, then keeps the
+  container running
 
 Git repositories are not included in the image. Clone the repositories you need
 into the persistent `/workspace` volume after starting the container.
@@ -44,11 +46,19 @@ requires an NVIDIA Linux host.
 
 ## Run
 
+On RunPod, leave the Docker command/start command empty so the image's default
+`/usr/local/bin/runpod-start` command runs. Configure `PUBLIC_KEY` with the SSH
+public key that should be allowed to log in. Expose `22/tcp`; optionally expose
+`80/http` and `8888/http` if those services are needed.
+
+Set `JUPYTER_PASSWORD` to start JupyterLab on `JUPYTER_PORT` (default `8888`).
+
 On a server with the NVIDIA Container Toolkit installed:
 
 ```bash
 export GITHUB_SSH_KEY="$HOME/.ssh/id_ed25519"
-docker compose run --rm experiments
+docker compose up --detach experiments
+docker compose exec experiments bash
 ```
 
 The Compose configuration requests GPU access and creates named volumes for the
